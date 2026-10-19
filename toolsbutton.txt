@@ -1,0 +1,855 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local backpack = player:WaitForChild("Backpack")
+
+local TITLE = "RIDZ ONTOP"
+local ACCENT = Color3.fromRGB(255, 255, 255)
+local ACCENT2 = Color3.fromRGB(200, 200, 200)
+local BG = Color3.fromRGB(5, 5, 5)
+local BG2 = Color3.fromRGB(15, 15, 15)
+local BG3 = Color3.fromRGB(30, 30, 30)
+local TEXT = Color3.fromRGB(255, 255, 255)
+local MUTED = Color3.fromRGB(140, 140, 140)
+local GREEN = Color3.fromRGB(255, 255, 255)
+local RED = Color3.fromRGB(90, 90, 90)
+
+local DEFAULT_SIZE = 62
+local settings = {}
+local activeEquips = {}
+local cooldowns = {}
+local keybinds = {}
+
+local screen = Instance.new("ScreenGui")
+screen.Name = "RidzOnTop"
+screen.ResetOnSpawn = false
+screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screen.IgnoreGuiInset = true
+screen.Parent = playerGui
+
+local main = Instance.new("Frame")
+main.Name = "Main"
+main.Size = UDim2.new(0, 400, 0, 520)
+main.Position = UDim2.new(0.5, -200, 0.5, -260)
+main.BackgroundColor3 = BG
+main.BorderSizePixel = 0
+main.ClipsDescendants = true
+main.Parent = screen
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 18)
+mainCorner.Parent = main
+
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Color = ACCENT
+mainStroke.Thickness = 2.5
+mainStroke.Transparency = 0.35
+mainStroke.Parent = main
+
+local glow = Instance.new("ImageLabel")
+glow.Size = UDim2.new(1, 60, 1, 60)
+glow.Position = UDim2.new(0, -30, 0, -30)
+glow.BackgroundTransparency = 1
+glow.Image = "rbxassetid://5028857084"
+glow.ImageColor3 = ACCENT
+glow.ImageTransparency = 0.92
+glow.ScaleType = Enum.ScaleType.Slice
+glow.SliceCenter = Rect.new(24, 24, 276, 276)
+glow.ZIndex = 0
+glow.Parent = main
+
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 50)
+titleBar.BackgroundColor3 = BG2
+titleBar.BorderSizePixel = 0
+titleBar.Parent = main
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 18)
+titleCorner.Parent = titleBar
+
+local titleFix = Instance.new("Frame")
+titleFix.Size = UDim2.new(1, 0, 0, 20)
+titleFix.Position = UDim2.new(0, 0, 1, -20)
+titleFix.BackgroundColor3 = BG2
+titleFix.BorderSizePixel = 0
+titleFix.Parent = titleBar
+
+local accentLine = Instance.new("Frame")
+accentLine.Size = UDim2.new(1, 0, 0, 3)
+accentLine.Position = UDim2.new(0, 0, 1, -3)
+accentLine.BackgroundColor3 = ACCENT
+accentLine.BorderSizePixel = 0
+accentLine.Parent = titleBar
+
+local gradient = Instance.new("UIGradient")
+gradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, ACCENT2),
+	ColorSequenceKeypoint.new(0.5, ACCENT),
+	ColorSequenceKeypoint.new(1, ACCENT2)
+})
+gradient.Parent = accentLine
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -110, 1, 0)
+titleLabel.Position = UDim2.new(0, 20, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = TITLE
+titleLabel.Font = Enum.Font.GothamBlack
+titleLabel.TextSize = 18
+titleLabel.TextColor3 = ACCENT
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = titleBar
+
+local minBtn = Instance.new("TextButton")
+minBtn.Size = UDim2.new(0, 34, 0, 34)
+minBtn.Position = UDim2.new(1, -82, 0.5, -17)
+minBtn.BackgroundColor3 = BG3
+minBtn.Text = "—"
+minBtn.Font = Enum.Font.GothamBold
+minBtn.TextSize = 17
+minBtn.TextColor3 = TEXT
+minBtn.BorderSizePixel = 0
+minBtn.AutoButtonColor = false
+minBtn.Parent = titleBar
+
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0, 9)
+minCorner.Parent = minBtn
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 34, 0, 34)
+closeBtn.Position = UDim2.new(1, -42, 0.5, -17)
+closeBtn.BackgroundColor3 = RED
+closeBtn.Text = "×"
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 19
+closeBtn.TextColor3 = TEXT
+closeBtn.BorderSizePixel = 0
+closeBtn.AutoButtonColor = false
+closeBtn.Parent = titleBar
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 9)
+closeCorner.Parent = closeBtn
+
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, -28, 0, 28)
+header.Position = UDim2.new(0, 14, 0, 58)
+header.BackgroundTransparency = 1
+header.Parent = main
+
+local itemCount = Instance.new("TextLabel")
+itemCount.Size = UDim2.new(1, 0, 1, 0)
+itemCount.BackgroundTransparency = 1
+itemCount.Text = "0 items"
+itemCount.Font = Enum.Font.GothamMedium
+itemCount.TextSize = 13
+itemCount.TextColor3 = MUTED
+itemCount.TextXAlignment = Enum.TextXAlignment.Left
+itemCount.Parent = header
+
+local scroll = Instance.new("ScrollingFrame")
+scroll.Size = UDim2.new(1, -20, 1, -100)
+scroll.Position = UDim2.new(0, 10, 0, 90)
+scroll.BackgroundTransparency = 1
+scroll.BorderSizePixel = 0
+scroll.ScrollBarThickness = 4
+scroll.ScrollBarImageColor3 = ACCENT
+scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+scroll.Parent = main
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.SortOrder = Enum.SortOrder.Name
+listLayout.Padding = UDim.new(0, 9)
+listLayout.Parent = scroll
+
+local draggingMain = false
+local dragStart, startPos
+
+titleBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		draggingMain = true
+		dragStart = input.Position
+		startPos = main.Position
+	end
+end)
+
+titleBar.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		draggingMain = false
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if draggingMain and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		local delta = input.Position - dragStart
+		main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+end)
+
+local minimized = false
+local fullSize = main.Size
+
+minBtn.MouseButton1Click:Connect(function()
+	minimized = not minimized
+	if minimized then
+		TweenService:Create(main, TweenInfo.new(0.22, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 400, 0, 50)}):Play()
+		scroll.Visible = false
+		header.Visible = false
+		minBtn.Text = "+"
+	else
+		TweenService:Create(main, TweenInfo.new(0.22, Enum.EasingStyle.Quad), {Size = fullSize}):Play()
+		scroll.Visible = true
+		header.Visible = true
+		minBtn.Text = "—"
+	end
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+	screen:Destroy()
+end)
+
+local equipHolder = Instance.new("Folder")
+equipHolder.Name = "EquipButtons"
+equipHolder.Parent = screen
+local settingsFrame = Instance.new("Frame")
+settingsFrame.Size = UDim2.new(0, 300, 0, 300)
+settingsFrame.Position = UDim2.new(0.5, -150, 0.5, -150)
+settingsFrame.BackgroundColor3 = BG
+settingsFrame.BorderSizePixel = 0
+settingsFrame.Visible = false
+settingsFrame.ZIndex = 70
+settingsFrame.Parent = screen
+
+local setCorner = Instance.new("UICorner")
+setCorner.CornerRadius = UDim.new(0, 16)
+setCorner.Parent = settingsFrame
+
+local setStroke = Instance.new("UIStroke")
+setStroke.Color = ACCENT
+setStroke.Thickness = 2.5
+setStroke.Transparency = 0.35
+setStroke.Parent = settingsFrame
+
+local setTitle = Instance.new("TextLabel")
+setTitle.Size = UDim2.new(1, -55, 0, 42)
+setTitle.Position = UDim2.new(0, 18, 0, 6)
+setTitle.BackgroundTransparency = 1
+setTitle.Text = "Settings"
+setTitle.Font = Enum.Font.GothamBlack
+setTitle.TextSize = 17
+setTitle.TextColor3 = ACCENT
+setTitle.TextXAlignment = Enum.TextXAlignment.Left
+setTitle.ZIndex = 71
+setTitle.Parent = settingsFrame
+
+local setClose = Instance.new("TextButton")
+setClose.Size = UDim2.new(0, 32, 0, 32)
+setClose.Position = UDim2.new(1, -42, 0, 10)
+setClose.BackgroundColor3 = RED
+setClose.Text = "×"
+setClose.Font = Enum.Font.GothamBold
+setClose.TextSize = 17
+setClose.TextColor3 = TEXT
+setClose.BorderSizePixel = 0
+setClose.ZIndex = 71
+setClose.Parent = settingsFrame
+
+local setCloseCorner = Instance.new("UICorner")
+setCloseCorner.CornerRadius = UDim.new(0, 8)
+setCloseCorner.Parent = setClose
+
+setClose.MouseButton1Click:Connect(function()
+	settingsFrame.Visible = false
+end)
+
+local sizeLabel = Instance.new("TextLabel")
+sizeLabel.Size = UDim2.new(1, -36, 0, 20)
+sizeLabel.Position = UDim2.new(0, 18, 0, 56)
+sizeLabel.BackgroundTransparency = 1
+sizeLabel.Text = "Size: 62"
+sizeLabel.Font = Enum.Font.GothamMedium
+sizeLabel.TextSize = 14
+sizeLabel.TextColor3 = TEXT
+sizeLabel.TextXAlignment = Enum.TextXAlignment.Left
+sizeLabel.ZIndex = 71
+sizeLabel.Parent = settingsFrame
+
+local sizeBar = Instance.new("Frame")
+sizeBar.Size = UDim2.new(1, -36, 0, 12)
+sizeBar.Position = UDim2.new(0, 18, 0, 82)
+sizeBar.BackgroundColor3 = BG3
+sizeBar.BorderSizePixel = 0
+sizeBar.ZIndex = 71
+sizeBar.Parent = settingsFrame
+
+local sizeBarCorner = Instance.new("UICorner")
+sizeBarCorner.CornerRadius = UDim.new(1, 0)
+sizeBarCorner.Parent = sizeBar
+
+local sizeFill = Instance.new("Frame")
+sizeFill.Size = UDim2.new(0.45, 0, 1, 0)
+sizeFill.BackgroundColor3 = ACCENT
+sizeFill.BorderSizePixel = 0
+sizeFill.ZIndex = 72
+sizeFill.Parent = sizeBar
+
+local sizeFillCorner = Instance.new("UICorner")
+sizeFillCorner.CornerRadius = UDim.new(1, 0)
+sizeFillCorner.Parent = sizeFill
+
+local sizeKnob = Instance.new("Frame")
+sizeKnob.Size = UDim2.new(0, 20, 0, 20)
+sizeKnob.Position = UDim2.new(0.45, -10, 0.5, -10)
+sizeKnob.BackgroundColor3 = TEXT
+sizeKnob.BorderSizePixel = 0
+sizeKnob.ZIndex = 73
+sizeKnob.Parent = sizeBar
+
+local sizeKnobCorner = Instance.new("UICorner")
+sizeKnobCorner.CornerRadius = UDim.new(1, 0)
+sizeKnobCorner.Parent = sizeKnob
+
+local lockLabel = Instance.new("TextLabel")
+lockLabel.Size = UDim2.new(0.55, 0, 0, 26)
+lockLabel.Position = UDim2.new(0, 18, 0, 114)
+lockLabel.BackgroundTransparency = 1
+lockLabel.Text = "Lock position"
+lockLabel.Font = Enum.Font.GothamMedium
+lockLabel.TextSize = 14
+lockLabel.TextColor3 = TEXT
+lockLabel.TextXAlignment = Enum.TextXAlignment.Left
+lockLabel.ZIndex = 71
+lockLabel.Parent = settingsFrame
+
+local lockToggle = Instance.new("TextButton")
+lockToggle.Size = UDim2.new(0, 58, 0, 30)
+lockToggle.Position = UDim2.new(1, -76, 0, 112)
+lockToggle.BackgroundColor3 = BG3
+lockToggle.Text = "OFF"
+lockToggle.Font = Enum.Font.GothamBold
+lockToggle.TextSize = 13
+lockToggle.TextColor3 = MUTED
+lockToggle.BorderSizePixel = 0
+lockToggle.ZIndex = 71
+lockToggle.Parent = settingsFrame
+
+local lockToggleCorner = Instance.new("UICorner")
+lockToggleCorner.CornerRadius = UDim.new(0, 8)
+lockToggleCorner.Parent = lockToggle
+
+local transLabel = Instance.new("TextLabel")
+transLabel.Size = UDim2.new(1, -36, 0, 20)
+transLabel.Position = UDim2.new(0, 18, 0, 156)
+transLabel.BackgroundTransparency = 1
+transLabel.Text = "Transparency: 0%"
+transLabel.Font = Enum.Font.GothamMedium
+transLabel.TextSize = 14
+transLabel.TextColor3 = TEXT
+transLabel.TextXAlignment = Enum.TextXAlignment.Left
+transLabel.ZIndex = 71
+transLabel.Parent = settingsFrame
+
+local transBar = Instance.new("Frame")
+transBar.Size = UDim2.new(1, -36, 0, 12)
+transBar.Position = UDim2.new(0, 18, 0, 182)
+transBar.BackgroundColor3 = BG3
+transBar.BorderSizePixel = 0
+transBar.ZIndex = 71
+transBar.Parent = settingsFrame
+
+local transBarCorner = Instance.new("UICorner")
+transBarCorner.CornerRadius = UDim.new(1, 0)
+transBarCorner.Parent = transBar
+
+local transFill = Instance.new("Frame")
+transFill.Size = UDim2.new(0, 0, 1, 0)
+transFill.BackgroundColor3 = ACCENT2
+transFill.BorderSizePixel = 0
+transFill.ZIndex = 72
+transFill.Parent = transBar
+
+local transFillCorner = Instance.new("UICorner")
+transFillCorner.CornerRadius = UDim.new(1, 0)
+transFillCorner.Parent = transFill
+
+local transKnob = Instance.new("Frame")
+transKnob.Size = UDim2.new(0, 20, 0, 20)
+transKnob.Position = UDim2.new(0, -10, 0.5, -10)
+transKnob.BackgroundColor3 = TEXT
+transKnob.BorderSizePixel = 0
+transKnob.ZIndex = 73
+transKnob.Parent = transBar
+
+local transKnobCorner = Instance.new("UICorner")
+transKnobCorner.CornerRadius = UDim.new(1, 0)
+transKnobCorner.Parent = transKnob
+
+local keyLabel = Instance.new("TextLabel")
+keyLabel.Size = UDim2.new(0.45, 0, 0, 26)
+keyLabel.Position = UDim2.new(0, 18, 0, 216)
+keyLabel.BackgroundTransparency = 1
+keyLabel.Text = "Keybind"
+keyLabel.Font = Enum.Font.GothamMedium
+keyLabel.TextSize = 14
+keyLabel.TextColor3 = TEXT
+keyLabel.TextXAlignment = Enum.TextXAlignment.Left
+keyLabel.ZIndex = 71
+keyLabel.Parent = settingsFrame
+
+local keyBtn = Instance.new("TextButton")
+keyBtn.Size = UDim2.new(0, 100, 0, 32)
+keyBtn.Position = UDim2.new(1, -118, 0, 213)
+keyBtn.BackgroundColor3 = BG3
+keyBtn.Text = "None"
+keyBtn.Font = Enum.Font.GothamBold
+keyBtn.TextSize = 14
+keyBtn.TextColor3 = MUTED
+keyBtn.BorderSizePixel = 0
+keyBtn.ZIndex = 71
+keyBtn.Parent = settingsFrame
+
+local keyBtnCorner = Instance.new("UICorner")
+keyBtnCorner.CornerRadius = UDim.new(0, 8)
+keyBtnCorner.Parent = keyBtn
+
+local listeningKey = false
+local currentSettingsTool = nil
+
+local function applySettingsToButton(toolName)
+	local data = activeEquips[toolName]
+	if not data then return end
+	local s = settings[toolName] or {size = DEFAULT_SIZE, locked = false, transparency = 0}
+	data.button.Size = UDim2.new(0, s.size, 0, s.size)
+	data.button.ImageTransparency = s.transparency
+	data.button.BackgroundTransparency = s.transparency
+end
+
+local function openSettings(toolName)
+	currentSettingsTool = toolName
+	local s = settings[toolName] or {size = DEFAULT_SIZE, locked = false, transparency = 0}
+	settings[toolName] = s
+
+	setTitle.Text = toolName
+	sizeLabel.Text = "Size: " .. tostring(s.size)
+	local sizePct = (s.size - 32) / (110 - 32)
+	sizeFill.Size = UDim2.new(sizePct, 0, 1, 0)
+	sizeKnob.Position = UDim2.new(sizePct, -10, 0.5, -10)
+
+	lockToggle.Text = s.locked and "ON" or "OFF"
+	lockToggle.BackgroundColor3 = s.locked and GREEN or BG3
+	lockToggle.TextColor3 = s.locked and BG or MUTED
+
+	transLabel.Text = "Transparency: " .. math.floor(s.transparency * 100) .. "%"
+	transFill.Size = UDim2.new(s.transparency, 0, 1, 0)
+	transKnob.Position = UDim2.new(s.transparency, -10, 0.5, -10)
+
+	local kb = keybinds[toolName]
+	keyBtn.Text = kb and kb.Name or "None"
+	keyBtn.TextColor3 = kb and BG or MUTED
+	keyBtn.BackgroundColor3 = kb and ACCENT or BG3
+
+	settingsFrame.Visible = true
+end
+
+local function setupSlider(bar, fill, knob, minVal, maxVal, onChange)
+	local dragging = false
+	local function update(input)
+		local rel = math.clamp((input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
+		fill.Size = UDim2.new(rel, 0, 1, 0)
+		knob.Position = UDim2.new(rel, -10, 0.5, -10)
+		onChange(minVal + (maxVal - minVal) * rel)
+	end
+	bar.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			update(input)
+		end
+	end)
+	knob.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+		end
+	end)
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = false
+		end
+	end)
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			update(input)
+		end
+	end)
+end
+
+setupSlider(sizeBar, sizeFill, sizeKnob, 32, 110, function(val)
+	if not currentSettingsTool then return end
+	settings[currentSettingsTool].size = math.floor(val)
+	sizeLabel.Text = "Size: " .. settings[currentSettingsTool].size
+	applySettingsToButton(currentSettingsTool)
+end)
+
+setupSlider(transBar, transFill, transKnob, 0, 0.85, function(val)
+	if not currentSettingsTool then return end
+	settings[currentSettingsTool].transparency = val
+	transLabel.Text = "Transparency: " .. math.floor(val * 100) .. "%"
+	applySettingsToButton(currentSettingsTool)
+end)
+
+lockToggle.MouseButton1Click:Connect(function()
+	if not currentSettingsTool then return end
+	local s = settings[currentSettingsTool]
+	s.locked = not s.locked
+	lockToggle.Text = s.locked and "ON" or "OFF"
+	lockToggle.BackgroundColor3 = s.locked and GREEN or BG3
+	lockToggle.TextColor3 = s.locked and BG or MUTED
+end)
+
+keyBtn.MouseButton1Click:Connect(function()
+	if not currentSettingsTool then return end
+	listeningKey = true
+	keyBtn.Text = "..."
+	keyBtn.TextColor3 = ACCENT
+end)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+	if listeningKey and currentSettingsTool then
+		if input.UserInputType == Enum.UserInputType.Keyboard then
+			if input.KeyCode == Enum.KeyCode.Escape then
+				keybinds[currentSettingsTool] = nil
+				keyBtn.Text = "None"
+				keyBtn.TextColor3 = MUTED
+				keyBtn.BackgroundColor3 = BG3
+			else
+				keybinds[currentSettingsTool] = input.KeyCode
+				keyBtn.Text = input.KeyCode.Name
+				keyBtn.TextColor3 = BG
+				keyBtn.BackgroundColor3 = ACCENT
+			end
+			listeningKey = false
+		end
+	end
+end)
+local function getToolCooldown(tool)
+	if not tool then return 1.5 end
+	local cd = tool:FindFirstChild("Cooldown") or tool:FindFirstChild("CD") or tool:FindFirstChild("cooldown")
+	if cd and (cd:IsA("NumberValue") or cd:IsA("IntValue")) then
+		return cd.Value
+	end
+	local conf = tool:FindFirstChild("Config") or tool:FindFirstChild("Settings")
+	if conf then
+		local c = conf:FindFirstChild("Cooldown") or conf:FindFirstChild("CD")
+		if c and (c:IsA("NumberValue") or c:IsA("IntValue")) then
+			return c.Value
+		end
+	end
+	local attr = tool:GetAttribute("Cooldown") or tool:GetAttribute("CD")
+	if typeof(attr) == "number" then
+		return attr
+	end
+	return 1.5
+end
+
+local function equipTool(toolName)
+	local now = tick()
+	if cooldowns[toolName] and now < cooldowns[toolName] then return end
+
+	local char = player.Character
+	if not char then return end
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 then return end
+
+	local target = backpack:FindFirstChild(toolName) or char:FindFirstChild(toolName)
+	if not target or not target:IsA("Tool") then
+		for _, v in ipairs(backpack:GetChildren()) do
+			if v:IsA("Tool") and v.Name == toolName then
+				target = v
+				break
+			end
+		end
+	end
+	if not target then return end
+
+	local cdTime = getToolCooldown(target)
+	humanoid:UnequipTools()
+	task.wait(0.03)
+	humanoid:EquipTool(target)
+	cooldowns[toolName] = now + cdTime
+end
+
+UserInputService.InputBegan:Connect(function(input, processed)
+	if processed then return end
+	if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
+	for name, key in pairs(keybinds) do
+		if key == input.KeyCode and activeEquips[name] then
+			equipTool(name)
+			break
+		end
+	end
+end)
+
+local function createEquipButton(tool)
+	if activeEquips[tool.Name] then return end
+	local s = settings[tool.Name] or {size = DEFAULT_SIZE, locked = false, transparency = 0}
+	settings[tool.Name] = s
+
+	local btn = Instance.new("ImageButton")
+	btn.Name = tool.Name
+	btn.Size = UDim2.new(0, s.size, 0, s.size)
+	btn.Position = UDim2.new(1, -95 - math.random(0, 55), 0.18 + math.random() * 0.5, 0)
+	btn.BackgroundColor3 = BG2
+	btn.BorderSizePixel = 0
+	btn.Image = (tool.TextureId ~= "" and tool.TextureId) or "rbxassetid://6031075931"
+	btn.ImageTransparency = s.transparency
+	btn.BackgroundTransparency = s.transparency
+	btn.ScaleType = Enum.ScaleType.Fit
+	btn.AutoButtonColor = false
+	btn.Parent = equipHolder
+
+	local btnCorner = Instance.new("UICorner")
+	btnCorner.CornerRadius = UDim.new(0, 15)
+	btnCorner.Parent = btn
+
+	local btnStroke = Instance.new("UIStroke")
+	btnStroke.Color = ACCENT
+	btnStroke.Thickness = 2.2
+	btnStroke.Transparency = 0.2
+	btnStroke.Parent = btn
+
+	local cdOverlay = Instance.new("Frame")
+	cdOverlay.Size = UDim2.new(1, 0, 1, 0)
+	cdOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	cdOverlay.BackgroundTransparency = 0.4
+	cdOverlay.BorderSizePixel = 0
+	cdOverlay.Visible = false
+	cdOverlay.ZIndex = 5
+	cdOverlay.Parent = btn
+
+	local cdCorner = Instance.new("UICorner")
+	cdCorner.CornerRadius = UDim.new(0, 15)
+	cdCorner.Parent = cdOverlay
+
+	local cdText = Instance.new("TextLabel")
+	cdText.Size = UDim2.new(1, 0, 1, 0)
+	cdText.BackgroundTransparency = 1
+	cdText.Text = "0"
+	cdText.Font = Enum.Font.GothamBlack
+	cdText.TextSize = 19
+	cdText.TextColor3 = TEXT
+	cdText.ZIndex = 6
+	cdText.Parent = cdOverlay
+
+	local draggingBtn = false
+	local btnDragStart, btnStartPos
+
+	btn.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			local st = settings[tool.Name]
+			if st and st.locked then return end
+			draggingBtn = true
+			btnDragStart = input.Position
+			btnStartPos = btn.Position
+		end
+	end)
+
+	btn.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			draggingBtn = false
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if draggingBtn and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			local delta = input.Position - btnDragStart
+			btn.Position = UDim2.new(btnStartPos.X.Scale, btnStartPos.X.Offset + delta.X, btnStartPos.Y.Scale, btnStartPos.Y.Offset + delta.Y)
+		end
+	end)
+
+	btn.MouseButton1Click:Connect(function()
+		if draggingBtn then return end
+		equipTool(tool.Name)
+	end)
+
+	activeEquips[tool.Name] = {
+		button = btn,
+		cooldownOverlay = cdOverlay,
+		cdText = cdText
+	}
+end
+
+local function removeEquipButton(toolName)
+	if activeEquips[toolName] then
+		activeEquips[toolName].button:Destroy()
+		activeEquips[toolName] = nil
+	end
+end
+
+RunService.RenderStepped:Connect(function()
+	local now = tick()
+	for name, data in pairs(activeEquips) do
+		local endTime = cooldowns[name]
+		if endTime and now < endTime then
+			local remaining = endTime - now
+			data.cooldownOverlay.Visible = true
+			if remaining >= 10 then
+				data.cdText.Text = tostring(math.ceil(remaining))
+			else
+				data.cdText.Text = string.format("%.1f", remaining)
+			end
+		else
+			data.cooldownOverlay.Visible = false
+			cooldowns[name] = nil
+		end
+	end
+end)
+
+local function createItemRow(tool)
+	if not tool:IsA("Tool") then return end
+	if scroll:FindFirstChild(tool.Name) then return end
+
+	local row = Instance.new("Frame")
+	row.Name = tool.Name
+	row.Size = UDim2.new(1, -10, 0, 60)
+	row.BackgroundColor3 = BG2
+	row.BorderSizePixel = 0
+	row.Parent = scroll
+
+	local rowCorner = Instance.new("UICorner")
+	rowCorner.CornerRadius = UDim.new(0, 13)
+	rowCorner.Parent = row
+
+	local rowStroke = Instance.new("UIStroke")
+	rowStroke.Color = Color3.fromRGB(60, 60, 60)
+	rowStroke.Thickness = 1.2
+	rowStroke.Transparency = 0.4
+	rowStroke.Parent = row
+
+	local icon = Instance.new("ImageLabel")
+	icon.Size = UDim2.new(0, 46, 0, 46)
+	icon.Position = UDim2.new(0, 8, 0.5, -23)
+	icon.BackgroundColor3 = BG3
+	icon.BorderSizePixel = 0
+	icon.Image = (tool.TextureId ~= "" and tool.TextureId) or "rbxassetid://6031075931"
+	icon.ScaleType = Enum.ScaleType.Fit
+	icon.Parent = row
+
+	local iconCorner = Instance.new("UICorner")
+	iconCorner.CornerRadius = UDim.new(0, 11)
+	iconCorner.Parent = icon
+
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Size = UDim2.new(1, -175, 1, 0)
+	nameLabel.Position = UDim2.new(0, 64, 0, 0)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.Text = tool.Name
+	nameLabel.Font = Enum.Font.GothamMedium
+	nameLabel.TextSize = 15
+	nameLabel.TextColor3 = TEXT
+	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	nameLabel.Parent = row
+
+	local gear = Instance.new("TextButton")
+	gear.Size = UDim2.new(0, 32, 0, 32)
+	gear.Position = UDim2.new(1, -108, 0.5, -16)
+	gear.BackgroundColor3 = BG3
+	gear.Text = "⚙"
+	gear.Font = Enum.Font.GothamBold
+	gear.TextSize = 16
+	gear.TextColor3 = MUTED
+	gear.BorderSizePixel = 0
+	gear.AutoButtonColor = false
+	gear.Parent = row
+
+	local gearCorner = Instance.new("UICorner")
+	gearCorner.CornerRadius = UDim.new(0, 9)
+	gearCorner.Parent = gear
+
+	gear.MouseButton1Click:Connect(function()
+		openSettings(tool.Name)
+	end)
+
+	local toggle = Instance.new("TextButton")
+	toggle.Size = UDim2.new(0, 56, 0, 32)
+	toggle.Position = UDim2.new(1, -68, 0.5, -16)
+	toggle.BackgroundColor3 = BG3
+	toggle.Text = "OFF"
+	toggle.Font = Enum.Font.GothamBold
+	toggle.TextSize = 13
+	toggle.TextColor3 = MUTED
+	toggle.BorderSizePixel = 0
+	toggle.AutoButtonColor = false
+	toggle.Parent = row
+
+	local toggleCorner = Instance.new("UICorner")
+	toggleCorner.CornerRadius = UDim.new(0, 9)
+	toggleCorner.Parent = toggle
+
+	local isOn = false
+	toggle.MouseButton1Click:Connect(function()
+		isOn = not isOn
+		if isOn then
+			toggle.Text = "ON"
+			toggle.BackgroundColor3 = ACCENT
+			toggle.TextColor3 = BG
+			createEquipButton(tool)
+		else
+			toggle.Text = "OFF"
+			toggle.BackgroundColor3 = BG3
+			toggle.TextColor3 = MUTED
+			removeEquipButton(tool.Name)
+		end
+	end)
+end
+
+local function scanInventory()
+	local count = 0
+	for _, child in ipairs(scroll:GetChildren()) do
+		if child:IsA("Frame") then
+			local exists = backpack:FindFirstChild(child.Name) or (player.Character and player.Character:FindFirstChild(child.Name))
+			if not exists then
+				removeEquipButton(child.Name)
+				child:Destroy()
+			else
+				count += 1
+			end
+		end
+	end
+	for _, item in ipairs(backpack:GetChildren()) do
+		if item:IsA("Tool") then
+			createItemRow(item)
+			count += 1
+		end
+	end
+	if player.Character then
+		for _, item in ipairs(player.Character:GetChildren()) do
+			if item:IsA("Tool") then
+				createItemRow(item)
+			end
+		end
+	end
+	itemCount.Text = count .. " item" .. (count ~= 1 and "s" or "")
+	task.wait()
+	scroll.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 14)
+end
+
+scanInventory()
+backpack.ChildAdded:Connect(function() task.wait(0.05) scanInventory() end)
+backpack.ChildRemoved:Connect(function() task.wait(0.05) scanInventory() end)
+player.CharacterAdded:Connect(function() task.wait(0.4) scanInventory() end)
+
+task.spawn(function()
+	while screen.Parent do
+		task.wait(2)
+		scanInventory()
+	end
+end)
+
+print("RIDZ ONTOP")
